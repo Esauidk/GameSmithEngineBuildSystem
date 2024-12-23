@@ -3,16 +3,19 @@ import os
 import shutil
 import subprocess
 
+ENGINE_GIT_REPO = "git@github.com:Esauidk/GameSmithEngine.git"
+DEFAULT_PLATFORM_BUILD = "windows"
+
 def build_game_exec(type, platform, output, redownload=True):
     folder = os.path.abspath("build")
     perform_download = not os.path.exists(folder) or redownload
     if perform_download :   
         print("Creating temp build folder: ", folder)
         os.mkdir(folder)
-        subprocess.run(["git", "clone", "git@github.com:Esauidk/GameSmithEngine.git", folder], check=True)
+        subprocess.run(["git", "clone", ENGINE_GIT_REPO, folder], check=True)
         print(os.listdir(folder))
         os.makedirs("%s/third-party/bin/premake" % (folder))
-        shutil.copyfile("C:\\Users\\esaus\\Documents\\Coding Projects\\GameSmithEngineBuildSystem\\third-party\\bin\\premake\\premake5.exe", "%s/%s" % (folder, "third-party/bin/premake/premake5.exe"))
+        shutil.copyfile("third-party\\bin\\premake\\premake5.exe", "%s/%s" % (folder, "third-party/bin/premake/premake5.exe"))
     
     wd = os.getcwd()
     os.chdir(folder)
@@ -32,7 +35,7 @@ def build_game_exec(type, platform, output, redownload=True):
         print("Compiling game application")
         match platform:
             case "windows":
-                subprocess.run(["C:\Program Files (x86)\Microsoft Visual Studio\\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe", "/m", config, sln_file], check=True)
+                subprocess.run(["MSBuild.exe", "/m", config, sln_file], check=True)
 
         print("Application Compilation Complete!")
         print("Copying Application to: ", output)
@@ -93,10 +96,21 @@ def parse_args():
         help='The output directory for your game'
     )
 
+    parser.add_argument(
+        '-r',
+        '--root',
+        dest="root",
+        required=False,
+        default=os.curdir,
+        help='The root directory for the build system'
+    )
+
     return parser.parse_args()
 
 def main():
     options = parse_args()
+    os.chdir(options.root)
+
     if (os.path.exists(options.output)):
         print("Removing existing folder:", options.output)
         shutil.rmtree(options.output)
@@ -104,7 +118,7 @@ def main():
     print("Creating output folder: ", options.output)
     os.mkdir(options.output)
 
-    build_game_exec(options.type, "windows", options.output, False)
+    build_game_exec(options.type, DEFAULT_PLATFORM_BUILD, options.output, False)
 
     print("Building project into ouput directory")
     build_prj(options.prj, options.output)
